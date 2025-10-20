@@ -46,7 +46,7 @@ MESSAGES = {
         "uploading": "☁️ Uploading worker to Cloudflare...",
         "secrets": "🔐 Setting up secrets...",
         "subdomain": "🌐 Creating worker subdomain...",
-        "success": "✅ Deployment completed successfully!\n\n🔗 Worker URL: {}\n📲 Fragment Subscription: `{}`\n\nUse the fragment subscription URL in your V2Ray client!",
+        "success": "✅ Deployment completed successfully!\n\n🔗 Panel URL: {}\n📲 Fragment Subscription: `{}`\n\nUse the fragment subscription URL in your V2Ray client!",
         "error": "❌ Error: {}"
     },
     "fa": {
@@ -78,7 +78,7 @@ MESSAGES = {
         "uploading": "☁️ آپلود worker به کلودفلر...",
         "secrets": "🔐 تنظیم secrets...",
         "subdomain": "🌐 ساخت subdomain برای worker...",
-        "success": "✅ نصب با موفقیت انجام شد!\n\n🔗 آدرس Worker: {}\n📲 لینک اشتراک Fragment: `{}`\n\nلینک اشتراک را در کلاینت V2Ray خود استفاده کنید!",
+        "success": "✅ نصب با موفقیت انجام شد!\n\n🔗 آدرس پنل: {}\n📲 لینک اشتراک Fragment: `{}`\n\nلینک اشتراک را در کلاینت V2Ray خود استفاده کنید!",
         "error": "❌ خطا: {}"
     }
 }
@@ -346,11 +346,12 @@ async def get_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         # Get worker URL
         worker_url = f"https://{worker_name}.{email.split('@')[0]}.workers.dev"
+        panel_url = f"{worker_url}/panel"
         
         # Build fragment subscription URL
         fragment_url = f"{worker_url}/sub/fragment/{generated_uuid}?app=xray#%F0%9F%92%A6%20BPB%20Fragment"
         
-        await update.message.reply_text(msg["success"].format(worker_url, fragment_url), parse_mode='Markdown')
+        await update.message.reply_text(msg["success"].format(panel_url, fragment_url), parse_mode='Markdown')
         
     except Exception as e:
         await update.message.reply_text(msg["error"].format(str(e)))

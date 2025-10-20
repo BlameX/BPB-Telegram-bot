@@ -149,16 +149,16 @@ async def get_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
         worker_url = f"https://{worker_name}.{email.split('@')[0]}.workers.dev"
         panel_url = f"{worker_url}/panel"
         
+        # Wait for worker to be ready
+        await update.message.reply_text("⏳ Waiting for worker to be ready...")
+        await asyncio.sleep(30)
+        
         # Generate strong password
         await update.message.reply_text("🔐 Setting up panel password...")
         panel_password = ''.join(secrets.choice(string.ascii_uppercase) for _ in range(2)) + \
                         ''.join(secrets.choice(string.ascii_lowercase) for _ in range(4)) + \
                         ''.join(secrets.choice(string.digits) for _ in range(4))
         panel_password = ''.join(secrets.SystemRandom().sample(panel_password, len(panel_password)))
-        
-        # Wait for worker to be ready
-        await update.message.reply_text("⏳ Waiting for worker to be ready...")
-        await asyncio.sleep(30)
         
         session = requests.Session()
         

@@ -4,6 +4,7 @@ import uuid
 import secrets
 import string
 import requests
+import re
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler
 
@@ -146,14 +147,73 @@ async def get_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         # Get worker URL
         worker_url = f"https://{worker_name}.{email.split('@')[0]}.workers.dev"
+        panel_url = f"{worker_url}/panel"
+        
+        # Generate strong password
+        await update.message.reply_text("🔐 Setting up panel password...")
+        panel_password = ''.join(secrets.choice(string.ascii_uppercase) for _ in range(2)) + \
+                        ''.join(secrets.choice(string.ascii_lowercase) for _ in range(4)) + \
+                        ''.join(secrets.choice(string.digits) for _ in range(4))
+        panel_password = ''.join(secrets.SystemRandom().sample(panel_password, len(panel_password)))
+        
+        # Wait for worker to be ready
+        await asyncio.sleep(5)
+        
+        session = requests.Session()
+        
+        # Set initial password
+        await update.message.reply_text("🔑 Configuring panel access...")
+        password_data = {
+            "newPassword": panel_password,
+            "confirmPassword": panel_password
+        }
+        session.post(panel_url, data=password_data, allow_redirects=False)
+        
+        # Login
+        await asyncio.sleep(2)
+        login_data = {"password": panel_password}
+        session.post(f"{panel_url}/login", data=login_data)
+        
+        # Configure ports
+        await update.message.reply_text("⚙️ Configuring ports...")
+        await asyncio.sleep(2)
+        
+        settings_data = {
+            "remoteDNS": "https://8.8.8.8/dns-query",
+            "localDNS": "8.8.8.8",
+            "vlessTrojanFakeDNS": "false",
+            "proxyIP": "",
+            "outProxy": "",
+            "outProxyParams": "",
+            "cleanIPs": "",
+            "enableIPv6": "true",
+            "customCdnAddrs": "",
+            "customCdnHost": "",
+            "customCdnSni": "",
+            "bestVLESSTrojanInterval": "30",
+            "vlessConfigs": "true",
+            "trojanConfigs": "true",
+            "ports": ["443", "8443", "2053", "2083", "2087", "2096", "80", "8080", "8880", "2052", "2082", "2086", "2095"]
+        }
+        session.post(f"{panel_url}/panel", data=settings_data)
+        
+        # Get fragment subscription
+        await update.message.reply_text("📱 Getting subscription link...")
+        await asyncio.sleep(2)
+        
+        frag_response = session.get(f"{panel_url}/sub")
+        frag_html = frag_response.text
+        
+        # Extract fragment URL
+        frag_match = re.search(r'https://[^"]+/fragsub/[^"]+', frag_html)
+        fragment_url = frag_match.group(0) if frag_match else f"{worker_url}/fragsub"
         
         result_message = (
             "✅ Deployment completed successfully!\n\n"
             f"🔗 Worker URL: {worker_url}\n"
-            f"📝 Worker Name: {worker_name}\n"
-            f"🔑 UUID: `{generated_uuid}`\n"
-            f"🔐 Trojan Password: `{generated_pass}`\n\n"
-            "Open your worker URL to access the panel!"
+            f"🔐 Panel Password: `{panel_password}`\n"
+            f"📲 Fragment Subscription: `{fragment_url}`\n\n"
+            "Use the fragment subscription URL in your V2Ray client!"
         )
         
         await update.message.reply_text(result_message, parse_mode='Markdown')

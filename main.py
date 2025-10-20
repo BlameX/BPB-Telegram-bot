@@ -274,9 +274,10 @@ async def get_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         kv_id = kv_response.json()["result"]["id"]
         
-        # Generate UUID and TR_PASS to bind as plain text variables
+        # Generate UUID, TR_PASS, and SUB_PATH to bind as plain text variables
         generated_uuid = str(uuid.uuid4())
         generated_pass = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(16))
+        generated_subpath = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
 
         # Upload worker with bindings (KV + plain text variables)
         await update.message.reply_text(msg["uploading"])        
@@ -298,6 +299,11 @@ async def get_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     "type": "plain_text",
                     "name": "TR_PASS",
                     "text": generated_pass
+                },
+                {
+                    "type": "plain_text",
+                    "name": "SUB_PATH",
+                    "text": generated_subpath
                 }
             ]
         }

@@ -46,7 +46,7 @@ MESSAGES = {
         "uploading": "☁️ Uploading worker to Cloudflare...",
         "secrets": "🔐 Setting up secrets...",
         "subdomain": "🌐 Creating worker subdomain...",
-        "success": "✅ Deployment completed successfully!\n\n🔗 Panel URL: {}\n📲 Fragment Subscription: `{}`\n\nUse the fragment subscription URL in your V2Ray client!",
+        "success": "✅ Deployment completed successfully!\n\n🔗 Panel URL: {}\n📲 Fragment Subscription: `{}`\n\nUse the fragment subscription URL in your V2Ray client!\n\nPlease wait about 5 to 10 minutes for the panel to be created.\nIn V2Ray, Mahsang, Streisand, or V2Box, add the subscription, tap 'Update subscription', and connect to 'Best fragment'.\nIf it didn't work, open the panel link, go to 'Vless - Trojan', enable all ports for both 'TLS port' and 'Non-TLS port', click 'Apply', then tap 'Update subscription' again.",
         "error": "❌ Error: {}"
     },
     "fa": {
@@ -78,7 +78,7 @@ MESSAGES = {
         "uploading": "☁️ آپلود worker به کلودفلر...",
         "secrets": "🔐 تنظیم secrets...",
         "subdomain": "🌐 ساخت subdomain برای worker...",
-        "success": "✅ نصب با موفقیت انجام شد!\n\n🔗 آدرس پنل: {}\n📲 لینک اشتراک Fragment: `{}`\n\nلینک اشتراک را در کلاینت V2Ray خود استفاده کنید!",
+        "success": "✅ نصب با موفقیت انجام شد!\n\n🔗 آدرس پنل: {}\n📲 لینک اشتراک Fragment: `{}`\n\nلینک اشتراک را در کلاینت V2Ray خود استفاده کنید!\n\nحدود 5 تا 10 دقیقه منتظر بمانید تا پنل ساخته شود.\nدر نرم‌افزارهای V2Ray، Mahsang، Streisand یا V2Box، اشتراک را اضافه کنید، گزینه 'Update subscription' را بزنید و به گزینه 'Best fragment' وصل شوید.\nاگر نشد، وارد لینک پنل شوید، به بخش 'Vless - Trojan' بروید، جلوی 'TLS port' و 'Non-TLS port' تیک همه پورت‌ها را بزنید و 'Apply' کنید، سپس دوباره 'Update subscription' را بزنید.",
         "error": "❌ خطا: {}"
     }
 }

@@ -5,6 +5,7 @@ import secrets
 import string
 import requests
 import re
+import json
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler, CallbackQueryHandler
 from telegram.error import TelegramError
@@ -303,7 +304,7 @@ async def get_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         files = {
             "worker.js": ("worker.js", worker_script, "application/javascript+module"),
-            "metadata": ("metadata.json", str(worker_metadata).replace("'", '"'), "application/json")
+            "metadata": ("metadata.json", json.dumps(worker_metadata), "application/json")
         }
 
         worker_headers = {

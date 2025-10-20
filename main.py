@@ -157,7 +157,8 @@ async def get_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
         panel_password = ''.join(secrets.SystemRandom().sample(panel_password, len(panel_password)))
         
         # Wait for worker to be ready
-        await asyncio.sleep(5)
+        await update.message.reply_text("⏳ Waiting for worker to be ready...")
+        await asyncio.sleep(30)
         
         session = requests.Session()
         

@@ -88,7 +88,13 @@ MESSAGES = {
 }
 
 async def check_membership(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    return True
+    user_id = update.effective_user.id
+    try:
+        member = await context.bot.get_chat_member(chat_id=CHANNEL_USERNAME, user_id=user_id)
+        return member.status in ['member', 'administrator', 'creator']
+    except Exception as e:
+        print(f"Membership check error: {e}")
+        return False
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -353,8 +359,8 @@ async def get_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
         worker_url = f"https://{worker_name}.{subdomain}.workers.dev"
         panel_url = f"{worker_url}/panel"
         
-        # Build fragment subscription URL
-        fragment_url = f"{worker_url}/sub/fragment/{generated_uuid}?app=xray#%F0%9F%92%A6%20BPB%20Fragment"
+        # Build fragment subscription URL using SUB_PATH instead of UUID
+        fragment_url = f"{worker_url}/sub/fragment/{generated_subpath}?app=xray#%F0%9F%92%A6%20BPB%20Fragment"
         
         await update.message.reply_text(msg["success"].format(panel_url, fragment_url), parse_mode='Markdown')
         

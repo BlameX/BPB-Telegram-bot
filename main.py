@@ -378,6 +378,7 @@ def main():
             ASK_API_KEY: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_api_key)],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
+        allow_reentry=True
     )
     
     application.add_handler(conv_handler)

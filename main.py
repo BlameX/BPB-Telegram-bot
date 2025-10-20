@@ -83,7 +83,7 @@ async def get_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "bindings": [
                 {
                     "type": "kv_namespace",
-                    "name": "KV",
+                    "name": "kv",
                     "namespace_id": kv_id
                 }
             ]

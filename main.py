@@ -147,89 +147,13 @@ async def get_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         # Get worker URL
         worker_url = f"https://{worker_name}.{email.split('@')[0]}.workers.dev"
-        panel_url = f"{worker_url}/panel"
-        
-        # Wait for worker to be ready
-        await update.message.reply_text("⏳ Waiting for worker to be ready...")
-        await asyncio.sleep(30)
-        
-        # Generate strong password
-        panel_password = ''.join(secrets.choice(string.ascii_uppercase) for _ in range(2)) + \
-                        ''.join(secrets.choice(string.ascii_lowercase) for _ in range(4)) + \
-                        ''.join(secrets.choice(string.digits) for _ in range(4))
-        panel_password = ''.join(secrets.SystemRandom().sample(panel_password, len(panel_password)))
-        
-        session = requests.Session()
-        
-        # Set initial password
-        await update.message.reply_text("🔐 Setting panel password...")
-        try:
-            check_resp = session.get(panel_url)
-            await asyncio.sleep(2)
-            
-            password_resp = session.post(
-                panel_url,
-                data={
-                    "newPassword": panel_password,
-                    "confirmPassword": panel_password
-                },
-                headers={
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "Referer": panel_url
-                }
-            )
-            await asyncio.sleep(3)
-            
-            # Login with the password
-            await update.message.reply_text("🔑 Logging into panel...")
-            login_resp = session.post(
-                panel_url,
-                data={"password": panel_password},
-                headers={
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "Referer": panel_url
-                }
-            )
-            await asyncio.sleep(3)
-            
-            # Configure all ports
-            await update.message.reply_text("⚙️ Configuring all ports...")
-            settings_resp = session.post(
-                panel_url,
-                data={
-                    "remoteDNS": "https://8.8.8.8/dns-query",
-                    "localDNS": "8.8.8.8",
-                    "vlessTrojanFakeDNS": "false",
-                    "proxyIP": "",
-                    "outProxy": "",
-                    "outProxyParams": "",
-                    "cleanIPs": "",
-                    "enableIPv6": "true",
-                    "customCdnAddrs": "",
-                    "customCdnHost": "",
-                    "customCdnSni": "",
-                    "bestVLESSTrojanInterval": "30",
-                    "vlessConfigs": "true",
-                    "trojanConfigs": "true",
-                    "ports": "443,8443,2053,2083,2087,2096,80,8080,8880,2052,2082,2086,2095"
-                },
-                headers={
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "Referer": panel_url
-                }
-            )
-            await asyncio.sleep(3)
-        except Exception as e:
-            await update.message.reply_text(f"⚠️ Panel config error: {str(e)}")
         
         # Build fragment subscription URL
-        await update.message.reply_text("📱 Generating subscription link...")
-        fragment_url = f"{worker_url}/sub/fragment/{generated_uuid}?app=xray"
+        fragment_url = f"{worker_url}/sub/fragment/{generated_uuid}?app=xray#%F0%9F%92%A6%20BPB%20Fragment"
         
         result_message = (
             "✅ Deployment completed successfully!\n\n"
             f"🔗 Worker URL: {worker_url}\n"
-            f"🔐 Panel Password: `{panel_password}`\n"
             f"📲 Fragment Subscription: `{fragment_url}`\n\n"
             "Use the fragment subscription URL in your V2Ray client!"
         )

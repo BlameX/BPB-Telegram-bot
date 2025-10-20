@@ -164,50 +164,56 @@ async def get_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         # Set initial password
         await update.message.reply_text("🔑 Configuring panel access...")
-        password_data = {
-            "newPassword": panel_password,
-            "confirmPassword": panel_password
-        }
-        session.post(panel_url, data=password_data, allow_redirects=False)
+        try:
+            resp = session.post(
+                panel_url,
+                data={"newPassword": panel_password, "confirmPassword": panel_password},
+                allow_redirects=False
+            )
+            await asyncio.sleep(3)
+            
+            # Login
+            resp = session.post(
+                f"{panel_url}/login",
+                data={"password": panel_password},
+                allow_redirects=False
+            )
+            await asyncio.sleep(2)
+            
+            # Get panel page
+            panel_resp = session.get(panel_url)
+            
+            # Configure ports
+            await update.message.reply_text("⚙️ Configuring ports...")
+            await asyncio.sleep(2)
+            
+            settings_resp = session.post(
+                panel_url,
+                data={
+                    "remoteDNS": "https://8.8.8.8/dns-query",
+                    "localDNS": "8.8.8.8",
+                    "vlessTrojanFakeDNS": "false",
+                    "proxyIP": "",
+                    "outProxy": "",
+                    "outProxyParams": "",
+                    "cleanIPs": "",
+                    "enableIPv6": "true",
+                    "customCdnAddrs": "",
+                    "customCdnHost": "",
+                    "customCdnSni": "",
+                    "bestVLESSTrojanInterval": "30",
+                    "vlessConfigs": "true",
+                    "trojanConfigs": "true",
+                    "ports": ["443", "8443", "2053", "2083", "2087", "2096", "80", "8080", "8880", "2052", "2082", "2086", "2095"]
+                }
+            )
+            await asyncio.sleep(2)
+        except Exception as e:
+            await update.message.reply_text(f"⚠️ Panel config warning: {str(e)}")
         
-        # Login
-        await asyncio.sleep(2)
-        login_data = {"password": panel_password}
-        session.post(f"{panel_url}/login", data=login_data)
-        
-        # Configure ports
-        await update.message.reply_text("⚙️ Configuring ports...")
-        await asyncio.sleep(2)
-        
-        settings_data = {
-            "remoteDNS": "https://8.8.8.8/dns-query",
-            "localDNS": "8.8.8.8",
-            "vlessTrojanFakeDNS": "false",
-            "proxyIP": "",
-            "outProxy": "",
-            "outProxyParams": "",
-            "cleanIPs": "",
-            "enableIPv6": "true",
-            "customCdnAddrs": "",
-            "customCdnHost": "",
-            "customCdnSni": "",
-            "bestVLESSTrojanInterval": "30",
-            "vlessConfigs": "true",
-            "trojanConfigs": "true",
-            "ports": ["443", "8443", "2053", "2083", "2087", "2096", "80", "8080", "8880", "2052", "2082", "2086", "2095"]
-        }
-        session.post(f"{panel_url}/panel", data=settings_data)
-        
-        # Get fragment subscription
+        # Build fragment URL
         await update.message.reply_text("📱 Getting subscription link...")
-        await asyncio.sleep(2)
-        
-        frag_response = session.get(f"{panel_url}/sub")
-        frag_html = frag_response.text
-        
-        # Extract fragment URL
-        frag_match = re.search(r'https://[^"]+/fragsub/[^"]+', frag_html)
-        fragment_url = frag_match.group(0) if frag_match else f"{worker_url}/fragsub"
+        fragment_url = f"{worker_url}/sub/fragment/{generated_uuid}?app=xray"
         
         result_message = (
             "✅ Deployment completed successfully!\n\n"

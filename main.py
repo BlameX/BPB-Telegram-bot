@@ -9,7 +9,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler, CallbackQueryHandler
 from telegram.error import TelegramError
 
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "8244225523:AAGkQRMRuBV4dg8hvnys6z6jtvH88UPfN_E")
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
 CHANNEL_USERNAME = "@svdplaylist"
 
 CHOOSE_LANGUAGE, ASK_EMAIL, ASK_API_KEY = range(3)

@@ -321,24 +321,24 @@ async def get_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text(msg["error"].format(upload_response.json().get('errors')))
             return ConversationHandler.END
         
-        # Create/ensure subdomain is enabled
+        # Fetch account workers subdomain to build correct URL
         await update.message.reply_text(msg["subdomain"])        
+        subdomain_resp = requests.get(
+            f"https://api.cloudflare.com/client/v4/accounts/{account_id}/workers/subdomain",
+            headers=headers
+        )
+        if subdomain_resp.json().get("success") and subdomain_resp.json().get("result"):
+            subdomain = subdomain_resp.json()["result"].get("subdomain")
+        else:
+            subdomain = email.split('@')[0]
+
+        # Enable subdomain
         subdomain_payload = {"enabled": True}
         requests.post(
             f"https://api.cloudflare.com/client/v4/accounts/{account_id}/workers/scripts/{worker_name}/subdomain",
             headers=headers,
             json=subdomain_payload
         )
-
-        # Fetch account workers subdomain to build correct URL
-        subdomain_resp = requests.get(
-            f"https://api.cloudflare.com/client/v4/accounts/{account_id}/workers/subdomains",
-            headers=headers
-        )
-        if not subdomain_resp.json().get("success"):
-            await update.message.reply_text(msg["error"].format(subdomain_resp.json().get('errors')))
-            return ConversationHandler.END
-        subdomain = subdomain_resp.json()["result"].get("subdomain")
 
         # Get worker URL
         worker_url = f"https://{worker_name}.{subdomain}.workers.dev"

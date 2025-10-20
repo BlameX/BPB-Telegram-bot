@@ -44,7 +44,7 @@ MESSAGES = {
         "downloading": "📥 Downloading worker script...",
         "creating_kv": "🗄️ Creating KV namespace...",
         "uploading": "☁️ Uploading worker to Cloudflare...",
-        "secrets": "🔐 Setting up secrets...",
+        "secrets": "🔧 Setting up variables...",
         "subdomain": "🌐 Creating worker subdomain...",
         "success": "✅ Deployment completed successfully!\n\n🔗 Panel URL: {}\n📲 Fragment Subscription: `{}`\n\nUse the fragment subscription URL in your V2Ray client!\n\nPlease wait about 5 to 10 minutes for the panel to be created.\nIn V2Ray, Mahsang, Streisand, or V2Box, add the subscription, tap 'Update subscription', and connect to 'Best fragment'.\nIf it didn't work, open the panel link, go to 'Vless - Trojan', enable all ports for both 'TLS port' and 'Non-TLS port', click 'Apply', then tap 'Update subscription' again.",
         "error": "❌ Error: {}"
@@ -76,7 +76,7 @@ MESSAGES = {
         "downloading": "📥 دانلود اسکریپت worker...",
         "creating_kv": "🗄️ ساخت KV namespace...",
         "uploading": "☁️ آپلود worker به کلودفلر...",
-        "secrets": "🔐 تنظیم secrets...",
+        "secrets": "🔧 در حال تنظیم متغیرها...",
         "subdomain": "🌐 ساخت subdomain برای worker...",
         "success": "✅ نصب با موفقیت انجام شد!\n\n🔗 آدرس پنل: {}\n📲 لینک اشتراک Fragment: `{}`\n\nلینک اشتراک را در کلاینت V2Ray خود استفاده کنید!\n\nحدود 5 تا 10 دقیقه منتظر بمانید تا پنل ساخته شود.\nدر نرم‌افزارهای V2Ray، Mahsang، Streisand یا V2Box، اشتراک را اضافه کنید، گزینه 'Update subscription' را بزنید و به گزینه 'Best fragment' وصل شوید.\nاگر نشد، وارد لینک پنل شوید، به بخش 'Vless - Trojan' بروید، جلوی 'TLS port' و 'Non-TLS port' تیک همه پورت‌ها را بزنید و 'Apply' کنید، سپس دوباره 'Update subscription' را بزنید.",
         "error": "❌ خطا: {}"
@@ -276,9 +276,13 @@ async def get_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         kv_id = kv_response.json()["result"]["id"]
         
-        # Upload worker
-        await update.message.reply_text(msg["uploading"])
-        
+        # Generate UUID and TR_PASS to bind as plain text variables
+        generated_uuid = str(uuid.uuid4())
+        generated_pass = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(16))
+
+        # Upload worker with bindings (KV + plain text variables)
+        await update.message.reply_text(msg["uploading"])        
+
         worker_metadata = {
             "main_module": "worker.js",
             "bindings": [
@@ -286,53 +290,39 @@ async def get_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     "type": "kv_namespace",
                     "name": "kv",
                     "namespace_id": kv_id
+                },
+                {
+                    "type": "plain_text",
+                    "name": "UUID",
+                    "text": generated_uuid
+                },
+                {
+                    "type": "plain_text",
+                    "name": "TR_PASS",
+                    "text": generated_pass
                 }
             ]
         }
-        
+
         files = {
             "worker.js": ("worker.js", worker_script, "application/javascript+module"),
             "metadata": ("metadata.json", str(worker_metadata).replace("'", '"'), "application/json")
         }
-        
+
         worker_headers = {
             "X-Auth-Email": email,
             "X-Auth-Key": api_key
         }
-        
+
         upload_response = requests.put(
             f"https://api.cloudflare.com/client/v4/accounts/{account_id}/workers/scripts/{worker_name}",
             headers=worker_headers,
             files=files
         )
-        
+
         if not upload_response.json().get("success"):
             await update.message.reply_text(msg["error"].format(upload_response.json().get('errors')))
             return ConversationHandler.END
-        
-        # Generate UUID and TR_PASS
-        generated_uuid = str(uuid.uuid4())
-        generated_pass = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(16))
-        
-        # Set secrets
-        await update.message.reply_text(msg["secrets"])
-        
-        secrets_data = {
-            "UUID": generated_uuid,
-            "TR_PASS": generated_pass
-        }
-        
-        for secret_name, secret_value in secrets_data.items():
-            secret_payload = {
-                "name": secret_name,
-                "text": secret_value,
-                "type": "secret_text"
-            }
-            requests.put(
-                f"https://api.cloudflare.com/client/v4/accounts/{account_id}/workers/scripts/{worker_name}/secrets",
-                headers=headers,
-                json=secret_payload
-            )
         
         # Create subdomain
         await update.message.reply_text(msg["subdomain"])

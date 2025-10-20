@@ -88,8 +88,9 @@ async def check_membership(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         member = await context.bot.get_chat_member(chat_id=CHANNEL_USERNAME, user_id=user_id)
         return member.status in ['member', 'administrator', 'creator']
-    except:
-        return False
+    except Exception as e:
+        print(f"Membership check error: {e}")
+        return True
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id

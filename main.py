@@ -154,7 +154,6 @@ async def get_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await asyncio.sleep(30)
         
         # Generate strong password
-        await update.message.reply_text("🔐 Setting up panel password...")
         panel_password = ''.join(secrets.choice(string.ascii_uppercase) for _ in range(2)) + \
                         ''.join(secrets.choice(string.ascii_lowercase) for _ in range(4)) + \
                         ''.join(secrets.choice(string.digits) for _ in range(4))
@@ -163,30 +162,38 @@ async def get_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
         session = requests.Session()
         
         # Set initial password
-        await update.message.reply_text("🔑 Configuring panel access...")
+        await update.message.reply_text("🔐 Setting panel password...")
         try:
-            resp = session.post(
+            check_resp = session.get(panel_url)
+            await asyncio.sleep(2)
+            
+            password_resp = session.post(
                 panel_url,
-                data={"newPassword": panel_password, "confirmPassword": panel_password},
-                allow_redirects=False
+                data={
+                    "newPassword": panel_password,
+                    "confirmPassword": panel_password
+                },
+                headers={
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Referer": panel_url
+                }
             )
             await asyncio.sleep(3)
             
-            # Login
-            resp = session.post(
-                f"{panel_url}/login",
+            # Login with the password
+            await update.message.reply_text("🔑 Logging into panel...")
+            login_resp = session.post(
+                panel_url,
                 data={"password": panel_password},
-                allow_redirects=False
+                headers={
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Referer": panel_url
+                }
             )
-            await asyncio.sleep(2)
+            await asyncio.sleep(3)
             
-            # Get panel page
-            panel_resp = session.get(panel_url)
-            
-            # Configure ports
-            await update.message.reply_text("⚙️ Configuring ports...")
-            await asyncio.sleep(2)
-            
+            # Configure all ports
+            await update.message.reply_text("⚙️ Configuring all ports...")
             settings_resp = session.post(
                 panel_url,
                 data={
@@ -204,15 +211,19 @@ async def get_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     "bestVLESSTrojanInterval": "30",
                     "vlessConfigs": "true",
                     "trojanConfigs": "true",
-                    "ports": ["443", "8443", "2053", "2083", "2087", "2096", "80", "8080", "8880", "2052", "2082", "2086", "2095"]
+                    "ports": "443,8443,2053,2083,2087,2096,80,8080,8880,2052,2082,2086,2095"
+                },
+                headers={
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Referer": panel_url
                 }
             )
-            await asyncio.sleep(2)
+            await asyncio.sleep(3)
         except Exception as e:
-            await update.message.reply_text(f"⚠️ Panel config warning: {str(e)}")
+            await update.message.reply_text(f"⚠️ Panel config error: {str(e)}")
         
-        # Build fragment URL
-        await update.message.reply_text("📱 Getting subscription link...")
+        # Build fragment subscription URL
+        await update.message.reply_text("📱 Generating subscription link...")
         fragment_url = f"{worker_url}/sub/fragment/{generated_uuid}?app=xray"
         
         result_message = (

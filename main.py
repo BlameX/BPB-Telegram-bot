@@ -5,29 +5,225 @@ import secrets
 import string
 import requests
 import re
-from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler, CallbackQueryHandler
+from telegram.error import TelegramError
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "8244225523:AAGkQRMRuBV4dg8hvnys6z6jtvH88UPfN_E")
+CHANNEL_USERNAME = "@svdplaylist"
 
-ASK_EMAIL, ASK_API_KEY = range(2)
+CHOOSE_LANGUAGE, ASK_EMAIL, ASK_API_KEY = range(3)
 
 user_data = {}
 
+MESSAGES = {
+    "en": {
+        "welcome": "Welcome to BPB Worker Panel Bot!\n\n⚠️ You must join our channel to use this bot.",
+        "join_button": "Join Channel",
+        "check_button": "I Joined ✅",
+        "not_joined": "❌ You haven't joined the channel yet!\nPlease join first, then click 'I Joined ✅'",
+        "choose_language": "Please choose your language:\nلطفا زبان خود را انتخاب کنید:",
+        "language_set": "✅ Language set to English",
+        "tutorial": "📚 Tutorial - How to get Cloudflare API Key:\n\n"
+                   "1. If you don't have a Cloudflare account, click 'Sign Up' to create one\n"
+                   "2. If you already have an account, click 'Sign In' to login\n"
+                   "3. After logging in, click 'Get API Key' to learn how to find your Global API Key\n\n"
+                   "📝 Steps to get your API Key:\n"
+                   "- Go to 'My Profile' → 'API Tokens'\n"
+                   "- Scroll down to 'Global API Key'\n"
+                   "- Click 'View' and copy your API Key\n\n"
+                   "When ready, use /create to start deployment!",
+        "signup_button": "Sign Up to Cloudflare",
+        "signin_button": "Sign In to Cloudflare",
+        "apikey_button": "Get API Key Guide",
+        "create_button": "Create Worker ⚡",
+        "ask_email": "Please enter your Cloudflare email address:",
+        "ask_api": "Please enter your Cloudflare Global API Key:",
+        "deploying": "🚀 Starting deployment...\nThis may take a few minutes.",
+        "account_info": "📋 Getting account information...",
+        "downloading": "📥 Downloading worker script...",
+        "creating_kv": "🗄️ Creating KV namespace...",
+        "uploading": "☁️ Uploading worker to Cloudflare...",
+        "secrets": "🔐 Setting up secrets...",
+        "subdomain": "🌐 Creating worker subdomain...",
+        "success": "✅ Deployment completed successfully!\n\n🔗 Worker URL: {}\n📲 Fragment Subscription: `{}`\n\nUse the fragment subscription URL in your V2Ray client!",
+        "error": "❌ Error: {}"
+    },
+    "fa": {
+        "welcome": "به ربات BPB Worker Panel خوش آمدید!\n\n⚠️ برای استفاده از این ربات باید در کانال ما عضو شوید.",
+        "join_button": "عضویت در کانال",
+        "check_button": "عضو شدم ✅",
+        "not_joined": "❌ شما هنوز در کانال عضو نشده‌اید!\nلطفا ابتدا عضو شوید، سپس روی 'عضو شدم ✅' کلیک کنید",
+        "choose_language": "Please choose your language:\nلطفا زبان خود را انتخاب کنید:",
+        "language_set": "✅ زبان به فارسی تنظیم شد",
+        "tutorial": "📚 آموزش - نحوه دریافت API Key کلودفلر:\n\n"
+                   "۱. اگر اکانت کلودفلر ندارید، روی 'ثبت نام' کلیک کنید\n"
+                   "۲. اگر قبلا اکانت دارید، روی 'ورود' کلیک کنید\n"
+                   "۳. بعد از ورود، روی 'راهنمای API Key' کلیک کنید تا نحوه پیدا کردن Global API Key را یاد بگیرید\n\n"
+                   "📝 مراحل دریافت API Key:\n"
+                   "- به 'My Profile' → 'API Tokens' بروید\n"
+                   "- به پایین اسکرول کنید تا 'Global API Key' را پیدا کنید\n"
+                   "- روی 'View' کلیک کنید و API Key خود را کپی کنید\n\n"
+                   "وقتی آماده شدید، از دستور /create برای شروع استفاده کنید!",
+        "signup_button": "ثبت نام در کلودفلر",
+        "signin_button": "ورود به کلودفلر",
+        "apikey_button": "راهنمای دریافت API Key",
+        "create_button": "ساخت Worker ⚡",
+        "ask_email": "لطفا ایمیل کلودفلر خود را وارد کنید:",
+        "ask_api": "لطفا Global API Key کلودفلر خود را وارد کنید:",
+        "deploying": "🚀 شروع نصب...\nاین کار ممکن است چند دقیقه طول بکشد.",
+        "account_info": "📋 دریافت اطلاعات اکانت...",
+        "downloading": "📥 دانلود اسکریپت worker...",
+        "creating_kv": "🗄️ ساخت KV namespace...",
+        "uploading": "☁️ آپلود worker به کلودفلر...",
+        "secrets": "🔐 تنظیم secrets...",
+        "subdomain": "🌐 ساخت subdomain برای worker...",
+        "success": "✅ نصب با موفقیت انجام شد!\n\n🔗 آدرس Worker: {}\n📲 لینک اشتراک Fragment: `{}`\n\nلینک اشتراک را در کلاینت V2Ray خود استفاده کنید!",
+        "error": "❌ خطا: {}"
+    }
+}
+
+async def check_membership(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    try:
+        member = await context.bot.get_chat_member(chat_id=CHANNEL_USERNAME, user_id=user_id)
+        return member.status in ['member', 'administrator', 'creator']
+    except:
+        return False
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    
+    if not await check_membership(update, context):
+        keyboard = [
+            [InlineKeyboardButton("Join Channel", url="https://t.me/svdplaylist")],
+            [InlineKeyboardButton("I Joined ✅", callback_data="check_membership")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.message.reply_text(
+            "Welcome to BPB Worker Panel Bot!\n\n⚠️ You must join our channel to use this bot.",
+            reply_markup=reply_markup
+        )
+        return CHOOSE_LANGUAGE
+    
+    keyboard = [
+        [InlineKeyboardButton("English 🇬🇧", callback_data="lang_en")],
+        [InlineKeyboardButton("فارسی 🇮🇷", callback_data="lang_fa")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
-        "Welcome to BPB Worker Panel Bot!\n\n"
-        "Use /create to deploy BPB Worker Panel to Cloudflare"
+        "Please choose your language:\nلطفا زبان خود را انتخاب کنید:",
+        reply_markup=reply_markup
     )
+    return CHOOSE_LANGUAGE
+
+async def check_membership_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    
+    if not await check_membership(update, context):
+        await query.edit_message_text(
+            "❌ You haven't joined the channel yet!\nPlease join first, then click 'I Joined ✅'"
+        )
+        keyboard = [
+            [InlineKeyboardButton("Join Channel", url="https://t.me/svdplaylist")],
+            [InlineKeyboardButton("I Joined ✅", callback_data="check_membership")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.message.reply_text(
+            "Welcome to BPB Worker Panel Bot!\n\n⚠️ You must join our channel to use this bot.",
+            reply_markup=reply_markup
+        )
+        return CHOOSE_LANGUAGE
+    
+    keyboard = [
+        [InlineKeyboardButton("English 🇬🇧", callback_data="lang_en")],
+        [InlineKeyboardButton("فارسی 🇮🇷", callback_data="lang_fa")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await query.edit_message_text(
+        "Please choose your language:\nلطفا زبان خود را انتخاب کنید:",
+        reply_markup=reply_markup
+    )
+    return CHOOSE_LANGUAGE
+
+async def language_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    
+    user_id = update.effective_user.id
+    lang = query.data.split("_")[1]
+    
+    if user_id not in user_data:
+        user_data[user_id] = {}
+    user_data[user_id]["language"] = lang
+    
+    msg = MESSAGES[lang]
+    
+    keyboard = [
+        [InlineKeyboardButton(msg["signup_button"], url="https://dash.cloudflare.com/sign-up")],
+        [InlineKeyboardButton(msg["signin_button"], url="https://dash.cloudflare.com/login")],
+        [InlineKeyboardButton(msg["apikey_button"], url="https://developers.cloudflare.com/fundamentals/api/get-started/create-token/")],
+        [InlineKeyboardButton(msg["create_button"], callback_data="start_create")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text(
+        msg["language_set"] + "\n\n" + msg["tutorial"],
+        reply_markup=reply_markup
+    )
+    return CHOOSE_LANGUAGE
+
+async def start_create_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    
+    user_id = update.effective_user.id
+    lang = user_data.get(user_id, {}).get("language", "en")
+    msg = MESSAGES[lang]
+    
+    await query.edit_message_text(msg["ask_email"])
+    return ASK_EMAIL
 
 async def create(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Please enter your Cloudflare email address:")
-    return ASK_EMAIL
+    user_id = update.effective_user.id
+    
+    if not await check_membership(update, context):
+        keyboard = [
+            [InlineKeyboardButton("Join Channel", url="https://t.me/svdplaylist")],
+            [InlineKeyboardButton("I Joined ✅", callback_data="check_membership")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.message.reply_text(
+            "⚠️ You must join our channel to use this bot.",
+            reply_markup=reply_markup
+        )
+        return ConversationHandler.END
+    
+    lang = user_data.get(user_id, {}).get("language", "en")
+    msg = MESSAGES[lang]
+    
+    keyboard = [
+        [InlineKeyboardButton(msg["signup_button"], url="https://dash.cloudflare.com/sign-up")],
+        [InlineKeyboardButton(msg["signin_button"], url="https://dash.cloudflare.com/login")],
+        [InlineKeyboardButton(msg["apikey_button"], url="https://developers.cloudflare.com/fundamentals/api/get-started/create-token/")],
+        [InlineKeyboardButton(msg["create_button"], callback_data="start_create")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await update.message.reply_text(msg["tutorial"], reply_markup=reply_markup)
+    return CHOOSE_LANGUAGE
 
 async def get_email(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-    user_data[user_id] = {"email": update.message.text}
-    await update.message.reply_text("Please enter your Cloudflare API Key:")
+    if user_id not in user_data:
+        user_data[user_id] = {}
+    user_data[user_id]["email"] = update.message.text
+    
+    lang = user_data.get(user_id, {}).get("language", "en")
+    msg = MESSAGES[lang]
+    
+    await update.message.reply_text(msg["ask_api"])
     return ASK_API_KEY
 
 async def get_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -35,7 +231,10 @@ async def get_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
     api_key = update.message.text
     email = user_data[user_id]["email"]
     
-    await update.message.reply_text("🚀 Starting deployment...\nThis may take a few minutes.")
+    lang = user_data.get(user_id, {}).get("language", "en")
+    msg = MESSAGES[lang]
+    
+    await update.message.reply_text(msg["deploying"])
     
     try:
         headers = {
@@ -45,16 +244,16 @@ async def get_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
         }
         
         # Get account ID
-        await update.message.reply_text("📋 Getting account information...")
+        await update.message.reply_text(msg["account_info"])
         acc_response = requests.get("https://api.cloudflare.com/client/v4/accounts", headers=headers)
         if not acc_response.json().get("success"):
-            await update.message.reply_text(f"❌ Error: {acc_response.json().get('errors', 'Invalid credentials')}")
+            await update.message.reply_text(msg["error"].format(acc_response.json().get('errors', 'Invalid credentials')))
             return ConversationHandler.END
         
         account_id = acc_response.json()["result"][0]["id"]
         
         # Download worker.js
-        await update.message.reply_text("📥 Downloading worker script...")
+        await update.message.reply_text(msg["downloading"])
         worker_response = requests.get("https://github.com/bia-pain-bache/BPB-Worker-Panel/releases/download/v3.6.1/worker.js")
         worker_script = worker_response.text
         
@@ -62,7 +261,7 @@ async def get_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
         worker_name = f"bpb-panel-{secrets.token_hex(4)}"
         
         # Create KV namespace
-        await update.message.reply_text("🗄️ Creating KV namespace...")
+        await update.message.reply_text(msg["creating_kv"])
         kv_payload = {"title": f"{worker_name}-kv"}
         kv_response = requests.post(
             f"https://api.cloudflare.com/client/v4/accounts/{account_id}/storage/kv/namespaces",
@@ -71,13 +270,13 @@ async def get_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         
         if not kv_response.json().get("success"):
-            await update.message.reply_text(f"❌ KV Error: {kv_response.json().get('errors')}")
+            await update.message.reply_text(msg["error"].format(kv_response.json().get('errors')))
             return ConversationHandler.END
         
         kv_id = kv_response.json()["result"]["id"]
         
         # Upload worker
-        await update.message.reply_text("☁️ Uploading worker to Cloudflare...")
+        await update.message.reply_text(msg["uploading"])
         
         worker_metadata = {
             "main_module": "worker.js",
@@ -107,7 +306,7 @@ async def get_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         
         if not upload_response.json().get("success"):
-            await update.message.reply_text(f"❌ Upload Error: {upload_response.json().get('errors')}")
+            await update.message.reply_text(msg["error"].format(upload_response.json().get('errors')))
             return ConversationHandler.END
         
         # Generate UUID and TR_PASS
@@ -115,7 +314,7 @@ async def get_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
         generated_pass = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(16))
         
         # Set secrets
-        await update.message.reply_text("🔐 Setting up secrets...")
+        await update.message.reply_text(msg["secrets"])
         
         secrets_data = {
             "UUID": generated_uuid,
@@ -135,7 +334,7 @@ async def get_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
         
         # Create subdomain
-        await update.message.reply_text("🌐 Creating worker subdomain...")
+        await update.message.reply_text(msg["subdomain"])
         subdomain_payload = {
             "enabled": True
         }
@@ -151,17 +350,10 @@ async def get_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Build fragment subscription URL
         fragment_url = f"{worker_url}/sub/fragment/{generated_uuid}?app=xray#%F0%9F%92%A6%20BPB%20Fragment"
         
-        result_message = (
-            "✅ Deployment completed successfully!\n\n"
-            f"🔗 Worker URL: {worker_url}\n"
-            f"📲 Fragment Subscription: `{fragment_url}`\n\n"
-            "Use the fragment subscription URL in your V2Ray client!"
-        )
-        
-        await update.message.reply_text(result_message, parse_mode='Markdown')
+        await update.message.reply_text(msg["success"].format(worker_url, fragment_url), parse_mode='Markdown')
         
     except Exception as e:
-        await update.message.reply_text(f"❌ Error: {str(e)}")
+        await update.message.reply_text(msg["error"].format(str(e)))
     
     return ConversationHandler.END
 
@@ -173,15 +365,19 @@ def main():
     application = Application.builder().token(BOT_TOKEN).build()
     
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("create", create)],
+        entry_points=[CommandHandler("start", start), CommandHandler("create", create)],
         states={
+            CHOOSE_LANGUAGE: [
+                CallbackQueryHandler(check_membership_callback, pattern="^check_membership$"),
+                CallbackQueryHandler(language_callback, pattern="^lang_"),
+                CallbackQueryHandler(start_create_callback, pattern="^start_create$")
+            ],
             ASK_EMAIL: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_email)],
             ASK_API_KEY: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_api_key)],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
     
-    application.add_handler(CommandHandler("start", start))
     application.add_handler(conv_handler)
     
     print("Bot started...")

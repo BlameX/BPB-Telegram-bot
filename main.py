@@ -12,6 +12,9 @@ from telegram.error import TelegramError
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 CHANNEL_USERNAME = "@svdplaylist"
 
+# Worker script source URL
+WORKER_JS_URL = "https://github.com/bia-pain-bache/BPB-Worker-Panel/releases/download/v3.6.1/worker.js"
+
 CHOOSE_LANGUAGE, ASK_EMAIL, ASK_API_KEY = range(3)
 
 user_data = {}
@@ -255,7 +258,7 @@ async def get_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         # Download worker.js
         await update.message.reply_text(msg["downloading"])
-        worker_response = requests.get("https://github.com/bia-pain-bache/BPB-Worker-Panel/releases/download/v3.6.1/worker.js")
+        worker_response = requests.get(WORKER_JS_URL)
         worker_script = worker_response.text
         
         # Generate random worker name

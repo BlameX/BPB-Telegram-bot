@@ -27,15 +27,15 @@ MESSAGES = {
         "tutorial": "📚 Tutorial - How to get Cloudflare API Key:\n\n"
                    "1. If you don't have a Cloudflare account, click 'Sign Up' to create one\n"
                    "2. If you already have an account, click 'Sign In' to login\n"
-                   "3. After logging in, click 'Get API Key' to learn how to find your Global API Key\n\n"
+                   "3. After logging in, click 'Get API Key' to go directly to your API Tokens page\n\n"
                    "📝 Steps to get your API Key:\n"
-                   "- Go to 'My Profile' → 'API Tokens'\n"
                    "- Scroll down to 'Global API Key'\n"
-                   "- Click 'View' and copy your API Key\n\n"
-                   "When ready, use /create to start deployment!",
+                   "- Click 'View' button\n"
+                   "- Copy your Global API Key\n\n"
+                   "When ready, click 'Create Worker' button!",
         "signup_button": "Sign Up to Cloudflare",
         "signin_button": "Sign In to Cloudflare",
-        "apikey_button": "Get API Key Guide",
+        "apikey_button": "Get API Key",
         "create_button": "Create Worker ⚡",
         "ask_email": "Please enter your Cloudflare email address:",
         "ask_api": "Please enter your Cloudflare Global API Key:",
@@ -59,15 +59,15 @@ MESSAGES = {
         "tutorial": "📚 آموزش - نحوه دریافت API Key کلودفلر:\n\n"
                    "۱. اگر اکانت کلودفلر ندارید، روی 'ثبت نام' کلیک کنید\n"
                    "۲. اگر قبلا اکانت دارید، روی 'ورود' کلیک کنید\n"
-                   "۳. بعد از ورود، روی 'راهنمای API Key' کلیک کنید تا نحوه پیدا کردن Global API Key را یاد بگیرید\n\n"
+                   "۳. بعد از ورود، روی 'دریافت API Key' کلیک کنید تا مستقیم به صفحه API Tokens بروید\n\n"
                    "📝 مراحل دریافت API Key:\n"
-                   "- به 'My Profile' → 'API Tokens' بروید\n"
                    "- به پایین اسکرول کنید تا 'Global API Key' را پیدا کنید\n"
-                   "- روی 'View' کلیک کنید و API Key خود را کپی کنید\n\n"
-                   "وقتی آماده شدید، از دستور /create برای شروع استفاده کنید!",
+                   "- روی دکمه 'View' کلیک کنید\n"
+                   "- Global API Key خود را کپی کنید\n\n"
+                   "وقتی آماده شدید، روی دکمه 'ساخت Worker' کلیک کنید!",
         "signup_button": "ثبت نام در کلودفلر",
         "signin_button": "ورود به کلودفلر",
-        "apikey_button": "راهنمای دریافت API Key",
+        "apikey_button": "دریافت API Key",
         "create_button": "ساخت Worker ⚡",
         "ask_email": "لطفا ایمیل کلودفلر خود را وارد کنید:",
         "ask_api": "لطفا Global API Key کلودفلر خود را وارد کنید:",
@@ -164,7 +164,7 @@ async def language_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton(msg["signup_button"], url="https://dash.cloudflare.com/sign-up")],
         [InlineKeyboardButton(msg["signin_button"], url="https://dash.cloudflare.com/login")],
-        [InlineKeyboardButton(msg["apikey_button"], url="https://developers.cloudflare.com/fundamentals/api/get-started/create-token/")],
+        [InlineKeyboardButton(msg["apikey_button"], url="https://dash.cloudflare.com/profile/api-tokens")],
         [InlineKeyboardButton(msg["create_button"], callback_data="start_create")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -207,7 +207,7 @@ async def create(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton(msg["signup_button"], url="https://dash.cloudflare.com/sign-up")],
         [InlineKeyboardButton(msg["signin_button"], url="https://dash.cloudflare.com/login")],
-        [InlineKeyboardButton(msg["apikey_button"], url="https://developers.cloudflare.com/fundamentals/api/get-started/create-token/")],
+        [InlineKeyboardButton(msg["apikey_button"], url="https://dash.cloudflare.com/profile/api-tokens")],
         [InlineKeyboardButton(msg["create_button"], callback_data="start_create")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)

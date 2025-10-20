@@ -286,26 +286,28 @@ async def get_api_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "main_module": "worker.js",
             "bindings": [
                 {
-                    "type": "kv_namespace",
                     "name": "kv",
-                    "namespace_id": kv_id
+                    "namespace_id": kv_id,
+                    "type": "kv_namespace"
                 },
                 {
-                    "type": "plain_text",
                     "name": "UUID",
-                    "text": generated_uuid
+                    "text": generated_uuid,
+                    "type": "plain_text"
                 },
                 {
-                    "type": "plain_text",
                     "name": "TR_PASS",
-                    "text": generated_pass
+                    "text": generated_pass,
+                    "type": "plain_text"
                 },
                 {
-                    "type": "plain_text",
                     "name": "SUB_PATH",
-                    "text": generated_subpath
+                    "text": generated_subpath,
+                    "type": "plain_text"
                 }
-            ]
+            ],
+            "compatibility_date": "2025-10-19",
+            "compatibility_flags": ["nodejs_compat"]
         }
 
         files = {
